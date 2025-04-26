@@ -1,13 +1,13 @@
 
 ![Founder and CEO](https://github.com/user-attachments/assets/614febea-8f41-4659-a25c-4c9c3da1d175)
 
-# Peduli Lindungi
+# Pantau Lindungi
 
 Aplikasi peringatan bencana berbasis Flutter.
 
 ## Deskripsi
 
-**Peduli Lindungi** adalah aplikasi mobile untuk peringatan dan informasi bencana menggunakan data resmi dari **BMKG** dan **BNPB**.  
+**Pantau Lindungi** adalah aplikasi mobile untuk peringatan dan informasi bencana menggunakan data resmi dari **BMKG** dan **BNPB**.  
 Aplikasi ini menyediakan berbagai fitur yang membantu pengguna memantau kondisi cuaca, melihat statistik bencana, serta melakukan pelaporan kejadian bencana secara langsung.
 
 ## Fitur Utama

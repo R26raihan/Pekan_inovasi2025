@@ -1,16 +1,47 @@
-# pekan_innovasi
+# Peduli Lindungi
 
-A new Flutter project.
+Aplikasi peringatan bencana berbasis Flutter.
 
-## Getting Started
+## Deskripsi
 
-This project is a starting point for a Flutter application.
+**Peduli Lindungi** adalah aplikasi mobile untuk peringatan dan informasi bencana menggunakan data resmi dari **BMKG** dan **BNPB**.  
+Aplikasi ini menyediakan berbagai fitur yang membantu pengguna memantau kondisi cuaca, melihat statistik bencana, serta melakukan pelaporan kejadian bencana secara langsung.
 
-A few resources to get you started if this is your first Flutter project:
+## Fitur Utama
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Informasi Cuaca**
+  - Polusi udara
+  - Kelembapan
+  - Suhu
+  - Data cuaca lainnya
+- **Statistik Bencana**
+  - Menampilkan data korban dan statistik tahunan kejadian bencana.
+- **Map Interaktif**
+  - Layer-layer cuaca real-time
+  - Titik koordinat kejadian gempa dan bencana
+- **Pelaporan Bencana**
+  - User dapat mengirimkan laporan bencana melalui aplikasi.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Fitur Relasi Kerabat Bencana (Sedang Dikembangkan)
+
+- Membuat relasi dengan kerabat lain di dalam aplikasi.
+- Saat kerabat atau user masuk ke dalam radius bencana:
+  - Sistem otomatis mengirimkan notifikasi ke kerabat terkait.
+  - Status kerabat di halaman relasi berubah menjadi "dalam radius bencana".
+- Kerabat dapat mengubah status menjadi aman dengan menekan tombol **"Safe"**.
+- Kerabat di luar radius akan mendapatkan **rute tercepat** menuju lokasi kerabat terdampak, menggunakan **Open Source Routing Machine (OSRM)**.
+
+## Teknologi
+
+- **Flutter** — Untuk pengembangan aplikasi mobile.
+- **Firestore** — Sebagai database realtime.
+- **Open Source Routing Machine (OSRM)** — Untuk fitur navigasi dan routing.
+
+## Fitur yang Sedang Dipertimbangkan
+
+- **Chatbot**  
+  Untuk membantu interaksi pengguna dengan sistem secara otomatis.
+- **Simulasi Bencana Berbasis Augmented Reality (AR)**  
+  Memberikan pengalaman edukasi melalui teknologi AR tentang skenario bencana.
+
+

@@ -1,3 +1,6 @@
+
+![Founder and CEO](https://github.com/user-attachments/assets/614febea-8f41-4659-a25c-4c9c3da1d175)
+
 # Peduli Lindungi
 
 Aplikasi peringatan bencana berbasis Flutter.

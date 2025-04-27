@@ -7,7 +7,8 @@ import 'BNPBCard/model.dart';
 import 'BNPBCard/getBNPB.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(int) onNavigate;
+  const HomeScreen({Key? key, required this.onNavigate}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -57,9 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // memberi ruang di bawah AppBar
             const SizedBox(height: kToolbarHeight + 50.0),
 
-            // 1. WeatherCard with Title
+            // 1. Informasi Cuaca
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
@@ -82,9 +84,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+
             const SizedBox(height: 16.0),
 
-            // 2. FloodCardList with Title
+            // 2. Informasi Bencana (FloodCardList)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
@@ -100,18 +103,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8.0),
                   FloodCardList(
-                    banjirData: fetchBanjirData(), // Fetch data from API
+                    banjirData: fetchBanjirData(),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 16.0),
 
-            // 3. FiturCard
+            // 3. List Fitur
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: FiturCard(),
+              child: FiturCard(onNavigate: widget.onNavigate),
             ),
+
+            const SizedBox(height: 24.0),
           ],
         ),
       ),
@@ -119,14 +125,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// New widget for horizontal scrolling list of FloodCards
+/// Widget untuk daftar FloodCard secara horizontal
 class FloodCardList extends StatelessWidget {
   final Future<List<Banjir>> banjirData;
-
-  const FloodCardList({
-    super.key,
-    required this.banjirData,
-  });
+  const FloodCardList({Key? key, required this.banjirData}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -155,20 +157,18 @@ class FloodCardList extends StatelessWidget {
 
         final banjirList = snapshot.data!;
         return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.3, // Adjustable height
+          height: MediaQuery.of(context).size.height * 0.3,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: banjirList.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: FloodCard(
-                  data: banjirList[index],
-                  isLoading: false,
-                  errorMessage: '',
-                ),
-              );
-            },
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: FloodCard(
+                data: banjirList[index],
+                isLoading: false,
+                errorMessage: '',
+              ),
+            ),
           ),
         );
       },

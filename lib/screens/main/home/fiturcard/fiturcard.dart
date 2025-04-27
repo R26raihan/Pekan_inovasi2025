@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class FiturCard extends StatelessWidget {
-  const FiturCard({super.key});
+  final Function(int) onNavigate;
+
+  const FiturCard({super.key, required this.onNavigate});
 
   static const TextStyle _labelStyle = TextStyle(
     fontSize: 12,
@@ -18,9 +20,9 @@ class FiturCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
       ),
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 12), // Menghilangkan margin horizontal
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
       child: Container(
-        width: width, // Memastikan lebar kontainer mengikuti lebar layar
+        width: width,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.blueGrey.shade800, Colors.black87],
@@ -44,6 +46,7 @@ class FiturCard extends StatelessWidget {
             const SizedBox(height: 20),
             LayoutBuilder(
               builder: (context, constraints) {
+                // Sesuaikan jumlah kolom grid berdasarkan ukuran layar
                 int crossAxisCount = width < 400 ? 2 : width < 600 ? 3 : 4;
                 return GridView.builder(
                   shrinkWrap: true,
@@ -57,9 +60,12 @@ class FiturCard extends StatelessWidget {
                   itemCount: _features.length,
                   itemBuilder: (context, index) {
                     final item = _features[index];
-                    return _buildFeatureItem(
-                      icon: item['icon'] as IconData,
-                      label: item['label'] as String,
+                    return GestureDetector(
+                      onTap: () => onNavigate(index),
+                      child: _buildFeatureItem(
+                        icon: item['icon'] as IconData,
+                        label: item['label'] as String,
+                      ),
                     );
                   },
                 );
@@ -107,12 +113,10 @@ class FiturCard extends StatelessWidget {
 }
 
 final List<Map<String, dynamic>> _features = [
-  {'icon': Icons.map, 'label': 'Peta'},
-  {'icon': Icons.cloud, 'label': 'Cuaca'},
-  {'icon': Icons.thermostat, 'label': 'Suhu'},
-  {'icon': Icons.water_drop, 'label': 'Kelembaban'},
-  {'icon': Icons.air, 'label': 'Udara'},
-  {'icon': Icons.wb_sunny, 'label': 'Matahari'},
-  {'icon': Icons.ac_unit, 'label': 'Angin'},
-  {'icon': Icons.location_on, 'label': 'Lokasi'},
+  {'icon': Icons.warning, 'label': 'Informasi Gempa'},
+  {'icon': Icons.people, 'label': 'Korban Bencana'},
+  {'icon': Icons.directions_car, 'label': 'Road Risk'},
+  {'icon': Icons.cloud, 'label': 'Prakiraan Cuaca'},
+  {'icon': Icons.air, 'label': 'Kualitas Udara'},
+  {'icon': Icons.contacts, 'label': 'Kerabat'},
 ];

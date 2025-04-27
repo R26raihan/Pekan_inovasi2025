@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 
 class WeatherService {
-  static const String _apiKey = '4e39df06cb5091186927ce444e1ab4ad'; // Ganti dengan API key Anda
+  static const String _apiKey = '4e39df06cb5091186927ce444e1ab4ad'; 
 
   // Fungsi untuk mendapatkan lokasi pengguna
   Future<Position> _getUserLocation() async {
@@ -63,8 +63,6 @@ class WeatherService {
       throw Exception('Error: ${e.toString()}');
     }
   }
-
-  // 🆕 Fungsi untuk mendapatkan URL tile map berdasarkan layer, zoom, x, y
   String getWeatherMapTileUrl({
     required String layer,
     required int zoom,

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:pekan_innovasi/screens/screens/main/home/BNPBCard/model.dart';
-import 'package:pekan_innovasi/screens/screens/main/home/BNPBCard/getBNPB.dart';
-import 'package:pekan_innovasi/screens/screens/main/BMKG/bmkg_api.dart' as bmkg;
+import 'package:pekan_innovasi/screens/main/home/BNPBCard/model.dart';
+import 'package:pekan_innovasi/screens/main/home/BNPBCard/getBNPB.dart';
+import 'package:pekan_innovasi/screens/main/BMKG/bmkg_api.dart' as bmkg;
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -29,12 +29,18 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   bmkg.AutoGempaResponse? _gempaTerbaruData;
   bmkg.GempaTerkiniResponse? _gempaTerkiniData;
 
-  final List<Map<String, dynamic>> _weatherLayers = [
-    {'name': 'Clouds', 'value': 'clouds_new'},
-    {'name': 'Precipitation', 'value': 'precipitation_new'},
-    {'name': 'Pressure', 'value': 'pressure_new'},
-    {'name': 'Temperature', 'value': 'temp_new'},
-  ];
+final List<Map<String, dynamic>> _weatherLayers = [
+  {'name': 'Clouds', 'value': 'clouds_new'},              // Gratis
+  {'name': 'Precipitation', 'value': 'precipitation_new'},// Gratis
+  {'name': 'Pressure', 'value': 'pressure_new'},          // Gratis
+  {'name': 'Temperature', 'value': 'temp_new'},           // Gratis
+  {'name': 'Wind Speed', 'value': 'wind_new'},            // Gratis
+  {'name': 'Snow', 'value': 'snow'},                      // Gratis
+  {'name': 'Sea Level Pressure', 'value': 'pressure_cntr'}, // Gratis
+  {'name': 'Temperature (Contour)', 'value': 'temp'},     // Gratis
+  {'name': 'Precipitation (Classic)', 'value': 'precipitation'}, // Gratis
+  {'name': 'Clouds (Classic)', 'value': 'clouds'},        // Gratis
+];
 
   @override
   void initState() {
@@ -767,37 +773,54 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildWeatherLayers() {
-    return Expanded(
-      child: ListView.builder(
-        itemCount: _weatherLayers.length,
-        itemBuilder: (context, index) {
-          final layer = _weatherLayers[index];
-          return ListTile(
-            title: Text(
-              layer['name'],
-              style: const TextStyle(color: Colors.white),
+Widget _buildWeatherLayers() {
+  return Expanded(
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            'Scrool Untuk memilih layer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
-            leading: Radio<String>(
-              value: layer['value'],
-              groupValue: _selectedWeatherLayer,
-              onChanged: (value) {
-                setState(() {
-                  _selectedWeatherLayer = value;
-                });
-              },
-              fillColor: MaterialStateProperty.all(const Color.fromARGB(255, 64, 255, 131)),
-            ),
-            onTap: () {
-              setState(() {
-                _selectedWeatherLayer = (_selectedWeatherLayer == layer['value']) ? null : layer['value'];
-              });
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _weatherLayers.length,
+            itemBuilder: (context, index) {
+              final layer = _weatherLayers[index];
+              return ListTile(
+                title: Text(
+                  layer['name'],
+                  style: TextStyle(color: Colors.white),
+                ),
+                leading: Radio<String>(
+                  value: layer['value'],
+                  groupValue: _selectedWeatherLayer,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedWeatherLayer = value;
+                    });
+                  },
+                  fillColor: MaterialStateProperty.all(Colors.tealAccent),
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedWeatherLayer = (_selectedWeatherLayer == layer['value']) ? null : layer['value'];
+                  });
+                },
+              );
             },
-          );
-        },
-      ),
-    );
-  }
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildClearLayerButton() {
     return ListTile(

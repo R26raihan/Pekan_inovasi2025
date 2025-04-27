@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Tambahkan ini untuk SystemChrome
-import 'screens/screens/splash_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent, // Status bar transparan
-    statusBarIconBrightness: Brightness.light, // Ikon status bar terang
-    systemNavigationBarColor: Colors.transparent, // Navigation bar transparan
-    systemNavigationBarIconBrightness: Brightness.light, // Ikon navigation bar terang
+    statusBarColor: Colors.transparent, 
+    statusBarIconBrightness: Brightness.light, 
+    systemNavigationBarColor: Colors.transparent, 
+    systemNavigationBarIconBrightness: Brightness.light, 
   ));
   runApp(const MyApp());
 }

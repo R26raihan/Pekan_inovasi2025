@@ -55,7 +55,7 @@ class MainNavBar extends StatelessWidget {
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.article_outlined),
-                label: 'Article',
+                label: 'Relation',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_rounded),

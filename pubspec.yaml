@@ -30,6 +30,7 @@ dependencies:
   cached_network_image: ^3.2.3
   json_annotation: ^4.4.0
   flutter_gif: ^0.0.4
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:

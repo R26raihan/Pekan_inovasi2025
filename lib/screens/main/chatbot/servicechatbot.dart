@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ChatbotService {
-  final String apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  final String apiUrl = '';
   final String apiKey = ''; // Ganti dengan API key dari OpenRouter
 
   Future<String> getBotReply(String message) async {

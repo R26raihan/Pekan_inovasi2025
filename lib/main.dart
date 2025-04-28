@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Tambahkan ini untuk SystemChrome
-import 'screens/splash_screen.dart';
+import 'package:flutter/services.dart'; // Untuk SystemChrome
+import 'routing/routes.dart'; // <-- Import AppRoutes
+
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent, 
-    statusBarIconBrightness: Brightness.light, 
-    systemNavigationBarColor: Colors.transparent, 
-    systemNavigationBarIconBrightness: Brightness.light, 
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
   ));
   runApp(const MyApp());
 }
@@ -23,8 +24,9 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
+      initialRoute: AppRoutes.splash, // <-- Ini penting
+      routes: AppRoutes.routes, // <-- Ini juga penting
     );
   }
 }

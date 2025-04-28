@@ -7,6 +7,7 @@ import 'package:pekan_innovasi/screens/main/Fitur/KorbanBencana.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forcast_weather.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forecast_air_population.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/kerabat.dart';
+import 'package:pekan_innovasi/screens/main/chatbot/chatbot.dart';
 
 
 class AppRoutes {
@@ -19,6 +20,7 @@ class AppRoutes {
   static const String forecastweather = '/forecastweather';
   static const String forecastairpopulation = '/forecastairpopulation';
   static const String kerabat = '/kerabat';
+  static const String chatbot = '/chatbot';
 
   
   static final routes = {
@@ -30,6 +32,7 @@ class AppRoutes {
     korbanbencana: (context) => const Korbanbencana(),
     forecastweather: (context) => const ForecastWeather(),
     forecastairpopulation: (context) => const ForecastAirPopulation(),
-    kerabat: (contect) => const Kerabat()
+    kerabat: (contect) => const Kerabat(),
+    chatbot: (content) => const ChatbotScreen()
   };
 }

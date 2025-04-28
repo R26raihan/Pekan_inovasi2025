@@ -114,7 +114,7 @@ class FiturCard extends StatelessWidget {
 
 final List<Map<String, dynamic>> _features = [
   {'icon': Icons.warning, 'label': 'Informasi Gempa'},
-  {'icon': Icons.people, 'label': 'Korban Bencana'},
+  {'icon': Icons.people, 'label': 'Tambah Relasi'},
   {'icon': Icons.directions_car, 'label': 'Road Risk'},
   {'icon': Icons.cloud, 'label': 'Prakiraan Cuaca'},
   {'icon': Icons.air, 'label': 'Kualitas Udara'},

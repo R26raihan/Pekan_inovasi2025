@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 
+class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final VoidCallback? onNotificationPressed;
+  final VoidCallback? onRefreshPressed;
 
-class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const MainAppBar({super.key});
+  const CustomAppBar({
+    super.key,
+    required this.title,
+    this.onNotificationPressed,
+    this.onRefreshPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.blueGrey.shade900,
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(24), // border radius bawah
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -21,20 +26,19 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       child: AppBar(
-        backgroundColor: Colors.transparent, // transparan agar container yang terlihat
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Image.asset(
               'images/logo.png',
               height: 30,
-              color: Colors.white, // tetap putih
+              color: Colors.white,
               colorBlendMode: BlendMode.srcIn,
             ),
             const SizedBox(width: 12),
             Text(
-              'Peduli Lindungi',
+              title,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -50,14 +54,14 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
               Icons.notifications_rounded,
               color: Colors.tealAccent,
             ),
-            onPressed: () {},
+            onPressed: onNotificationPressed,
           ),
           IconButton(
             icon: const Icon(
-              Icons.search_rounded,
+              Icons.refresh_rounded,
               color: Colors.tealAccent,
             ),
-            onPressed: () {},
+            onPressed: onRefreshPressed,
           ),
         ],
       ),

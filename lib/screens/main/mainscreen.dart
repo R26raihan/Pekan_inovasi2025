@@ -12,6 +12,7 @@ import 'package:pekan_innovasi/screens/main/Fitur/RoadRisk.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forcast_weather.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forecast_air_population.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/kerabat.dart';
+import 'package:pekan_innovasi/routing/routes.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -23,16 +24,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Daftar screen yang bisa diakses melalui navbar
-  final List<Widget> _navbarScreens = [
-    HomeScreen(onNavigate: (index) {}), // Diisi nanti di initState
-    const DashboardScreen(),
-    const MapScreen(),
-    const ArticleScreen(),
-    const ProfileScreen(),
-  ];
-
-  // Daftar screen untuk fitur-fitur dari FiturCard
+  final List<Widget> _navbarScreens = [];
   final List<Widget> _featureScreens = [
     const Informasigempa(),
     const Korbanbencana(),
@@ -45,62 +37,64 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    // Inisialisasi HomeScreen dengan callback navigasi yang benar
-    _navbarScreens[0] = HomeScreen(onNavigate: _navigateToFeatureScreen);
+    // inisialisasi list navbar screens sekaligus setup callback home
+    _navbarScreens.addAll([
+      HomeScreen(onNavigate: _navigateToFeatureScreen),
+      const DashboardScreen(),
+      const MapScreen(),
+      const Relation(),
+      const ProfileScreen(),
+    ]);
   }
 
-  // Fungsi untuk navigasi dari FiturCard
   void _navigateToFeatureScreen(int featureIndex) {
-    // Index fitur dimulai setelah index terakhir navbar
-    int targetIndex = _navbarScreens.length + featureIndex;
-    
-    // Pastikan index tidak melebihi total screen yang ada
+    final targetIndex = _navbarScreens.length + featureIndex;
     if (targetIndex < _navbarScreens.length + _featureScreens.length) {
-      setState(() {
-        _currentIndex = targetIndex;
-      });
+      setState(() => _currentIndex = targetIndex);
     }
   }
 
-  // Fungsi untuk navigasi melalui navbar
   void _onNavTap(int index) {
-    // Hanya izinkan navigasi ke screen navbar (0 sampai 4)
     if (index < _navbarScreens.length) {
-      setState(() {
-        _currentIndex = index;
-      });
+      setState(() => _currentIndex = index);
     }
+  }
+
+  Widget _buildCurrentScreen() {
+    if (_currentIndex < _navbarScreens.length) {
+      return _navbarScreens[_currentIndex];
+    } else {
+      final featureIndex = _currentIndex - _navbarScreens.length;
+      if (featureIndex < _featureScreens.length) {
+        return _featureScreens[featureIndex];
+      }
+    }
+    // fallback
+    return _navbarScreens[0];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      extendBody: true,
-      appBar: const MainAppBar(),
-      body: _buildCurrentScreen(),
-      bottomNavigationBar: MainNavBar(
-        currentIndex: _currentIndex < _navbarScreens.length 
-            ? _currentIndex 
-            : 0, // Jika di screen fitur, set ke 0 (Home)
-        onTap: _onNavTap,
-      ),
-    );
-  }
-
-  Widget _buildCurrentScreen() {
-    // Jika index mengarah ke screen navbar
-    if (_currentIndex < _navbarScreens.length) {
-      return _navbarScreens[_currentIndex];
-    } 
-    // Jika index mengarah ke screen fitur
-    else {
-      int featureIndex = _currentIndex - _navbarScreens.length;
-      if (featureIndex < _featureScreens.length) {
-        return _featureScreens[featureIndex];
-      }
-    }
-    // Fallback ke HomeScreen jika index tidak valid
-    return _navbarScreens[0];
+  extendBodyBehindAppBar: true,
+  extendBody: true,
+  appBar: const MainAppBar(),
+  body: _buildCurrentScreen(),
+  bottomNavigationBar: MainNavBar(
+    currentIndex: _currentIndex < _navbarScreens.length ? _currentIndex : 0,
+    onTap: _onNavTap,
+  ),
+  floatingActionButton: FloatingActionButton(
+    onPressed: () {
+      Navigator.pushNamed(context, AppRoutes.chatbot);
+    },
+    backgroundColor: Colors.white, // supaya icon kelihatan
+    child: Image.asset(
+      'images/BOT.png',
+      height: 40, // ukuran icon (bisa diubah)
+      width: 40,
+    ),
+  ),
+);
   }
 }

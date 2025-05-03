@@ -34,7 +34,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Peduli Lindungi',
+              'Pantau Lindungi',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,

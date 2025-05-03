@@ -71,4 +71,51 @@ class WeatherService {
   }) {
     return 'https://tile.openweathermap.org/map/$layer/$zoom/$x/$y.png?appid=$_apiKey';
   }
+   /// **NEW** Ambil data *forecast* polusi udara (per jam untuk 5 hari ke depan)
+  Future<List<dynamic>> fetchPollutionForecastData() async {
+    final position = await _getUserLocation();
+    final lat = position.latitude, lon = position.longitude;
+
+    final forecastUrl = Uri.parse(
+      'https://api.openweathermap.org/data/2.5/air_pollution/forecast'
+      '?lat=$lat&lon=$lon&appid=$_apiKey'
+    );
+    final resp = await http.get(forecastUrl);
+    if (resp.statusCode != 200) {
+      throw Exception('Failed to load pollution forecast');
+    }
+    final data = json.decode(resp.body);
+    // API mengembalikan {"coord":{…},"list":[{…}, …]}
+    return data['list'] as List<dynamic>;
+  }
+    /// Ambil data forecast cuaca 5 hari ke depan (setiap 3 jam)
+  Future<List<dynamic>> fetchWeatherForecastData() async {
+    final position = await _getUserLocation();
+    final lat = position.latitude, lon = position.longitude;
+
+    final forecastUrl = Uri.parse(
+      'https://api.openweathermap.org/data/2.5/forecast'
+      '?lat=$lat&lon=$lon&appid=$_apiKey&units=metric'
+    );
+    final resp = await http.get(forecastUrl);
+    if (resp.statusCode != 200) {
+      throw Exception('Failed to load weather forecast');
+    }
+    final data = json.decode(resp.body);
+    // Ambil list forecast
+    final List<dynamic> list = data['list'];
+    // Pilih satu entry per hari (tanggal unik) hingga 5 hari
+    final seen = <String>{};
+    final daily = <dynamic>[];
+    for (var item in list) {
+      final date = (item['dt_txt'] as String).split(' ')[0];
+      if (!seen.contains(date)) {
+        seen.add(date);
+        daily.add(item);
+      }
+      if (daily.length == 5) break;
+    }
+    return daily;
+  }
+
 }

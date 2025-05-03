@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pekan_innovasi/widgets/appbar/appbar.dart';
 import 'package:pekan_innovasi/widgets/navigator/navigator.dart';
@@ -7,7 +8,7 @@ import 'package:pekan_innovasi/screens/main/map/map.dart';
 import 'package:pekan_innovasi/screens/main/relation/relation.dart';
 import 'package:pekan_innovasi/screens/main/profile/profile.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/InformasiGempa.dart';
-import 'package:pekan_innovasi/screens/main/Fitur/KorbanBencana.dart';
+import 'package:pekan_innovasi/screens/main/Fitur/Tambahrelasi.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/RoadRisk.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forcast_weather.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forecast_air_population.dart';
@@ -27,7 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _navbarScreens = [];
   final List<Widget> _featureScreens = [
     const Informasigempa(),
-    const Korbanbencana(),
+    const Tambahrelasi(),
     const Roadrisk(),
     const ForecastWeather(),
     const ForecastAirPopulation(),
@@ -60,6 +61,14 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    print('MainScreen: Pengguna logout, navigasi ke /login');
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    }
+  }
+
   Widget _buildCurrentScreen() {
     if (_currentIndex < _navbarScreens.length) {
       return _navbarScreens[_currentIndex];
@@ -76,25 +85,54 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-  extendBodyBehindAppBar: true,
-  extendBody: true,
-  appBar: const MainAppBar(),
-  body: _buildCurrentScreen(),
-  bottomNavigationBar: MainNavBar(
-    currentIndex: _currentIndex < _navbarScreens.length ? _currentIndex : 0,
-    onTap: _onNavTap,
-  ),
-  floatingActionButton: FloatingActionButton(
-    onPressed: () {
-      Navigator.pushNamed(context, AppRoutes.chatbot);
-    },
-    backgroundColor: Colors.white, // supaya icon kelihatan
-    child: Image.asset(
-      'images/BOT.png',
-      height: 40, // ukuran icon (bisa diubah)
-      width: 40,
-    ),
-  ),
-);
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      appBar: const MainAppBar(),
+      body: _buildCurrentScreen(),
+      bottomNavigationBar: MainNavBar(
+        currentIndex: _currentIndex < _navbarScreens.length ? _currentIndex : 0,
+        onTap: _onNavTap,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, AppRoutes.chatbot);
+        },
+        backgroundColor: Colors.white, // supaya icon kelihatan
+        child: Image.asset(
+          'images/BOT.png',
+          height: 40, // ukuran icon (bisa diubah)
+          width: 40,
+        ),
+      ),
+      drawer: Drawer(
+        backgroundColor: Colors.blueGrey.shade800,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blueGrey,
+              ),
+              child: Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.white),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: _logout,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

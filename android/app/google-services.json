@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "476405610657",
+    "project_id": "pekan-inovasi2025",
+    "storage_bucket": "pekan-inovasi2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:476405610657:android:cb283b555bb9196c17d8e0",
+        "android_client_info": {
+          "package_name": "com.example.pekan_innovasi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPJylWPr1EQC-71lsRBXyjMKu3UmZUA4w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

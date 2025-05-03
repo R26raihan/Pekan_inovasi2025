@@ -4,20 +4,19 @@ import 'package:latlong2/latlong.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-import 'dummy.dart';
+import 'relation.dart';
 import 'custom_app_bar.dart';
 
-// Model untuk menyimpan data rute dan instruksi
+
 class RouteInfo {
   final List<LatLng> points;
   final List<String> instructions;
-  final String relationName;
+  final List<String> relationNames;
 
   RouteInfo({
     required this.points,
     required this.instructions,
-    required this.relationName,
+    required this.relationNames,
   });
 }
 
@@ -40,45 +39,53 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  late Future<List<RouteInfo>> _routesFuture;
+  late Future<RouteInfo> _routeFuture;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isDarkTheme = false; // State untuk tema peta
+  bool _isDarkTheme = false;
 
   @override
   void initState() {
     super.initState();
-    // Ambil rute otomatis untuk kerabat dalam radius bencana
-    final disasterRelations = widget.relations.where((r) => r.isInDisasterRadius).toList();
-    _routesFuture = Future.wait(disasterRelations.map((r) =>
-        _getRoute(widget.userLocation, LatLng(r.latitude, r.longitude), r.name)));
+    // Ambil rute untuk semua relasi termasuk pengguna sebagai satu perjalanan
+    final allLocations = [widget.userLocation, ...widget.relations.map((r) => LatLng(r.latitude, r.longitude))];
+    final allNames = <String>[widget.userName, ...widget.relations.map((r) => r.name)];
+    _routeFuture = _getRoute(allLocations, allNames);
   }
 
-  // Mengambil rute dan instruksi dari OSRM API
-  Future<RouteInfo> _getRoute(LatLng start, LatLng end, String name) async {
+  // Mengambil rute dan instruksi dari OSRM API untuk multi-titik
+  Future<RouteInfo> _getRoute(List<LatLng> locations, List<String> names) async {
+    // Buat string koordinat untuk OSRM route API dengan beberapa titik
+    final coordinates = locations.map((loc) => '${loc.longitude},${loc.latitude}').join(';');
     final url = Uri.parse(
-      'http://router.project-osrm.org/route/v1/driving/' +
-          '${start.longitude},${start.latitude};${end.longitude},${end.latitude}' +
+      'http://router.project-osrm.org/route/v1/driving/$coordinates' +
           '?overview=full&geometries=geojson&steps=true',
     );
 
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final coords = data['routes'][0]['geometry']['coordinates'] as List;
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final coords = (data['routes'][0]['geometry']['coordinates'] as List).cast<List<dynamic>>();
       final points = coords.map((pt) => LatLng(pt[1] as double, pt[0] as double)).toList();
-      final steps = data['routes'][0]['legs'][0]['steps'] as List;
+      
+      final legs = (data['routes'][0]['legs'] as List).cast<Map<String, dynamic>>();
+      final steps = legs.expand((leg) => (leg['steps'] as List).cast<Map<String, dynamic>>()).toList();
+      
       final instructions = steps.map((step) {
-        final maneuver = step['maneuver'];
-        final type = maneuver['type'];
-        final modifier = maneuver['modifier'] ?? '';
-        final street = step['name'];
-        return '${type}${modifier.isNotEmpty ? ' ' + modifier : ''} on ${street.isNotEmpty ? street : 'road'}';
+        final maneuver = step['maneuver'] as Map<String, dynamic>;
+        final type = maneuver['type'] as String;
+        final modifier = (maneuver['modifier'] as String?) ?? '';
+        final street = (step['name'] as String?) ?? 'road';
+        return '${type}${modifier.isNotEmpty ? ' $modifier' : ''} on $street';
       }).toList();
 
-      return RouteInfo(points: points, instructions: instructions, relationName: name);
+      return RouteInfo(
+        points: points,
+        instructions: instructions,
+        relationNames: names,
+      );
     } else {
-      throw Exception('Gagal mendapatkan rute dari OSRM');
+      throw Exception('Gagal mendapatkan rute dari OSRM: ${response.statusCode}');
     }
   }
 
@@ -101,8 +108,8 @@ class _MapPageState extends State<MapPage> {
             color: Colors.blueGrey.shade800,
           ),
           child: SafeArea(
-            child: FutureBuilder<List<RouteInfo>>(
-              future: _routesFuture,
+            child: FutureBuilder<RouteInfo>(
+              future: _routeFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -114,18 +121,38 @@ class _MapPageState extends State<MapPage> {
                     ),
                   );
                 } else {
-                  final routes = snapshot.data!;
+                  final routeInfo = snapshot.data!;
                   return ListView(
                     padding: const EdgeInsets.all(16),
-                    children: routes.expand((routeInfo) {
-                      return [
-                        ListTile(
+                    children: [
+                      const Text(
+                        'Rute Keseluruhan:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.tealAccent,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...routeInfo.relationNames.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final name = entry.value;
+                        return ListTile(
                           title: Text(
-                            'Rute ke ${routeInfo.relationName}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.tealAccent,
-                            ),
+                            name,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          trailing: index < routeInfo.relationNames.length - 1
+                              ? const Icon(Icons.arrow_forward, color: Colors.tealAccent)
+                              : null,
+                        );
+                      }),
+                      const Divider(color: Colors.white54),
+                      if (routeInfo.instructions.isNotEmpty) ...[
+                        const ListTile(
+                          title: Text(
+                            'Petunjuk Arah:',
+                            style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold),
                           ),
                         ),
                         ...routeInfo.instructions.map((instr) => ListTile(
@@ -135,9 +162,54 @@ class _MapPageState extends State<MapPage> {
                                 style: const TextStyle(color: Colors.white),
                               ),
                             )),
-                        const Divider(color: Colors.white54),
-                      ];
-                    }).toList(),
+                      ],
+                      const Divider(color: Colors.white54),
+                      ...widget.relations.map((relation) => ExpansionTile(
+                            title: Text(
+                              relation.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.tealAccent,
+                              ),
+                            ),
+                            subtitle: Text(
+                              relation.alamat,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            children: [
+                              ListTile(
+                                title: Text(
+                                  'Email: ${relation.email}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              ListTile(
+                                title: Text(
+                                  'Telepon: ${relation.phone}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              ListTile(
+                                title: Text(
+                                  'Dibuat: ${relation.createdAt.toDate().toString()}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              ListTile(
+                                title: Text(
+                                  'Terakhir Diperbarui: ${relation.lastUpdated.toDate().toString()}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              ListTile(
+                                title: Text(
+                                  'Timestamp Lokasi: ${relation.locationTimestamp.toDate().toString()}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          )),
+                    ],
                   );
                 }
               },
@@ -154,7 +226,9 @@ class _MapPageState extends State<MapPage> {
         },
         onRefreshPressed: () {
           setState(() {
-            initState();
+            final allLocations = [widget.userLocation, ...widget.relations.map((r) => LatLng(r.latitude, r.longitude))];
+            final allNames = <String>[widget.userName, ...widget.relations.map((r) => r.name)];
+            _routeFuture = _getRoute(allLocations, allNames);
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Memperbarui lokasi')),
@@ -173,20 +247,19 @@ class _MapPageState extends State<MapPage> {
                 urlTemplate: _getTileUrl(),
                 subdomains: _isDarkTheme ? ['a', 'b', 'c', 'd'] : ['a', 'b', 'c'],
               ),
-              // Tampilkan rute
-              FutureBuilder<List<RouteInfo>>(
-                future: _routesFuture,
+              FutureBuilder<RouteInfo>(
+                future: _routeFuture,
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
-                    final routes = snapshot.data!;
+                    final routeInfo = snapshot.data!;
                     return PolylineLayer(
-                      polylines: routes
-                          .map((r) => Polyline(
-                                points: r.points,
-                                strokeWidth: 4.0,
-                                color: Colors.tealAccent,
-                              ))
-                          .toList(),
+                      polylines: [
+                        Polyline(
+                          points: routeInfo.points,
+                          strokeWidth: 4.0,
+                          color: Colors.tealAccent,
+                        ),
+                      ],
                     );
                   }
                   return const SizedBox.shrink();
@@ -194,7 +267,6 @@ class _MapPageState extends State<MapPage> {
               ),
               MarkerLayer(
                 markers: [
-                  // Marker pengguna
                   Marker(
                     point: widget.userLocation,
                     width: 80,
@@ -239,7 +311,6 @@ class _MapPageState extends State<MapPage> {
                       ],
                     ),
                   ),
-                  // Marker kerabat
                   ...widget.relations.map((r) => Marker(
                         point: LatLng(r.latitude, r.longitude),
                         width: 80,
@@ -291,7 +362,6 @@ class _MapPageState extends State<MapPage> {
               ),
             ],
           ),
-          // Tombol untuk membuka sidebar
           Positioned(
             bottom: 16,
             right: 16,
@@ -303,7 +373,6 @@ class _MapPageState extends State<MapPage> {
               child: const Icon(Icons.directions, color: Colors.blueGrey),
             ),
           ),
-          // Tombol untuk mengubah tema peta
           Positioned(
             bottom: 16,
             right: 80,

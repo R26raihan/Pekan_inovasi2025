@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:pekan_innovasi/routing/routes.dart';
 import 'auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -46,17 +48,22 @@ class _SplashScreenState extends State<SplashScreen>
     // Start animation
     _controller.forward();
 
-    // Navigate to LoginScreen after 4 seconds
-    _navigateToLogin();
+    // Navigate based on auth status after animation
+    _navigateBasedOnAuthStatus();
   }
 
-  _navigateToLogin() async {
+  Future<void> _navigateBasedOnAuthStatus() async {
+    // Tunggu animasi selesai (4 detik total, termasuk delay tambahan)
     await Future.delayed(const Duration(seconds: 4), () {});
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        print('SplashScreen: Pengguna sudah login, navigasi ke /main');
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      } else {
+        print('SplashScreen: Pengguna belum login, navigasi ke /login');
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
     }
   }
 

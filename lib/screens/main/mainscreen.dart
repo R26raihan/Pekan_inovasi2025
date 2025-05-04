@@ -93,17 +93,32 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _currentIndex < _navbarScreens.length ? _currentIndex : 0,
         onTap: _onNavTap,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, AppRoutes.chatbot);
-        },
-        backgroundColor: Colors.white, // supaya icon kelihatan
-        child: Image.asset(
-          'images/BOT.png',
-          height: 40, // ukuran icon (bisa diubah)
-          width: 40,
-        ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end, // Posisi di bagian bawah
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Tombol logout
+          FloatingActionButton(
+            onPressed: _logout,
+            backgroundColor: Colors.red, // Warna tombol logout
+            child: const Icon(Icons.logout, color: Colors.white), // Ikon logout
+          ),
+          const SizedBox(height: 10), // Jarak antar tombol
+          // Tombol chatbot
+          FloatingActionButton(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.chatbot);
+            },
+            backgroundColor: Colors.white,
+            child: Image.asset(
+              'images/BOT.png',
+              height: 40,
+              width: 40,
+            ),
+          ),
+        ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // Posisi di kanan bawah
       drawer: Drawer(
         backgroundColor: Colors.blueGrey.shade800,
         child: ListView(

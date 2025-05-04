@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'relation_service.dart';
 
 class Tambahrelasi extends StatefulWidget {
   const Tambahrelasi({super.key});
@@ -14,6 +15,7 @@ class _TambahrelasiState extends State<Tambahrelasi> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   bool isLoading = false;
+  final RelationService _relationService = RelationService();
 
   @override
   Widget build(BuildContext context) {
@@ -206,87 +208,24 @@ class _TambahrelasiState extends State<Tambahrelasi> {
 
   Future<void> _handleRelationRequest(
       String requestId, String fromUid, bool accept) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-
-    final batch = FirebaseFirestore.instance.batch();
-    final requestRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('relasiMasuk')
-        .doc(requestId);
-
-    if (accept) {
-      // Ambil data pengirim dan penerima
-      final senderDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(fromUid)
-          .get();
-      final receiverDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-
-      // Update status permintaan menjadi diterima
-      batch.update(requestRef, {'status': 'accepted'});
-
-      // Tambahkan relasi ke koleksi relasi pengirim
-      final senderRelationData = {
-        'targetUid': currentUser.uid,
-        'namaLengkap': receiverDoc['namaLengkap'] ?? 'Tidak tersedia',
-        'telepon': receiverDoc['telepon'] ?? 'Tidak tersedia',
-        'email': receiverDoc['email'] ?? 'Tidak tersedia',
-        'alamat': receiverDoc['alamat'] ?? 'Tidak tersedia',
-        'location': receiverDoc['location'],
-        'createdAt': Timestamp.now(),
-        'lastUpdated': Timestamp.now(),
-        'status': 'accepted',
-      };
-
-      batch.set(
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(fromUid)
-            .collection('relasi')
-            .doc(),
-        senderRelationData,
+    try {
+      await _relationService.handleRelationRequest(
+        requestId: requestId,
+        fromUid: fromUid,
+        accept: accept,
       );
-
-      // Tambahkan relasi ke koleksi relasi penerima
-      final receiverRelationData = {
-        'targetUid': fromUid,
-        'namaLengkap': senderDoc['namaLengkap'] ?? 'Tidak tersedia',
-        'telepon': senderDoc['telepon'] ?? 'Tidak tersedia',
-        'email': senderDoc['email'] ?? 'Tidak tersedia',
-        'alamat': senderDoc['alamat'] ?? 'Tidak tersedia',
-        'location': senderDoc['location'],
-        'createdAt': Timestamp.now(),
-        'lastUpdated': Timestamp.now(),
-        'status': 'accepted',
-      };
-
-      batch.set(
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .collection('relasi')
-            .doc(),
-        receiverRelationData,
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              accept ? 'Relasi diterima' : 'Permintaan relasi ditolak'),
+        ),
       );
-    } else {
-      // Update status permintaan menjadi ditolak
-      batch.update(requestRef, {'status': 'rejected'});
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memproses permintaan: $e')),
+      );
     }
-
-    await batch.commit();
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(accept
-            ? 'Relasi diterima'
-            : 'Permintaan relasi ditolak'),
-      ),
-    );
   }
 
   Widget _buildFormSection() {
@@ -377,68 +316,10 @@ class _TambahrelasiState extends State<Tambahrelasi> {
                   });
 
                   try {
-                    final user = FirebaseAuth.instance.currentUser;
-                    final phone = _phoneController.text.trim();
-
-                    if (user == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pengguna belum login')),
-                      );
-                      return;
-                    }
-
-                    // Cari user target berdasarkan nomor telepon
-                    final targetSnapshot = await FirebaseFirestore.instance
-                        .collection('users')
-                        .where('telepon', isEqualTo: phone)
-                        .limit(1)
-                        .get();
-
-                    if (targetSnapshot.docs.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pengguna tidak ditemukan')),
-                      );
-                      return;
-                    }
-
-                    final targetUser = targetSnapshot.docs.first;
-                    final targetUid = targetUser.id;
-
-                    // Data relasi dikirim oleh pengirim (user saat ini)
-                    final relasiData = {
-                      'targetUid': targetUid,
-                      'namaLengkap': _nameController.text.trim(),
-                      'telepon': phone,
-                      'status': 'pending',
-                      'createdAt': Timestamp.now(),
-                    };
-
-                    // Data relasi masuk di user yang dituju
-                    final relasiMasukData = {
-                      'fromUid': user.uid,
-                      'namaLengkapPengirim': (await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .get())['namaLengkap'],
-                      'teleponPengirim': (await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .get())['telepon'],
-                      'status': 'pending',
-                      'createdAt': Timestamp.now(),
-                    };
-
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user.uid)
-                        .collection('relasi')
-                        .add(relasiData);
-
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(targetUid)
-                        .collection('relasiMasuk')
-                        .add(relasiMasukData);
+                    await _relationService.sendRelationRequest(
+                      name: _nameController.text.trim(),
+                      phone: _phoneController.text.trim(),
+                    );
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Permintaan relasi dikirim')),

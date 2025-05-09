@@ -4,10 +4,10 @@ import 'package:pekan_innovasi/screens/splash_screen.dart';
 import 'package:pekan_innovasi/screens/auth/register_screen.dart';
 import 'package:pekan_innovasi/screens/main/mainscreen.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/InformasiGempa.dart';
-import 'package:pekan_innovasi/screens/main/Fitur/Tambahrelasi.dart';
+import 'package:pekan_innovasi/screens/main/Fitur/relation/Tambahrelasi.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forcast_weather.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/forecast_air_population.dart';
-import 'package:pekan_innovasi/screens/main/Fitur/kerabat.dart';
+import 'package:pekan_innovasi/screens/main/Fitur/psikologi/prsikologiscreen.dart';
 import 'package:pekan_innovasi/screens/main/chatbot/chatbot.dart';
 
 class AppRoutes {
@@ -19,7 +19,7 @@ class AppRoutes {
   static const String tambahrelasi = '/tambahrelasi'; 
   static const String forecastweather = '/forecastweather';
   static const String forecastairpopulation = '/forecastairpopulation';
-  static const String kerabat = '/kerabat';
+  static const String psikologi = '/psikologi';
   static const String chatbot = '/chatbot';
 
   static final Map<String, WidgetBuilder> routes = {
@@ -31,7 +31,7 @@ class AppRoutes {
     tambahrelasi: (context) => const Tambahrelasi(),
     forecastweather: (context) => const ForecastWeather(),
     forecastairpopulation: (context) => const ForecastAirPopulation(),
-    kerabat: (context) => const Kerabat(),
+    psikologi: (context) => const Psikologi(),
     chatbot: (context) => const ChatbotScreen(),
   };
 }

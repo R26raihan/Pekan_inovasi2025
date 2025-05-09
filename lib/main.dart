@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:location/location.dart' as loc;
+import 'package:permission_handler/permission_handler.dart';
 import 'routing/routes.dart';
 
 // Konfigurasi Firebase
@@ -26,38 +27,46 @@ class LocationService {
   bool _isInitialized = false;
 
   Future<bool> initialize() async {
-    if (_isInitialized) return true;
+    if (_isInitialized) {
+      print('LocationService: Already initialized');
+      return true;
+    }
 
     try {
+      // Periksa layanan lokasi
       bool serviceEnabled = await _location.serviceEnabled();
       if (!serviceEnabled) {
+        print('LocationService: Requesting location service');
         serviceEnabled = await _location.requestService();
         if (!serviceEnabled) {
-          print('Location service disabled');
+          print('LocationService: Location service disabled by user');
           return false;
         }
       }
 
+      // Periksa izin lokasi
       loc.PermissionStatus permission = await _location.hasPermission();
-      if (permission != loc.PermissionStatus.granted) {
+      if (permission == loc.PermissionStatus.denied) {
+        print('LocationService: Requesting location permission');
         permission = await _location.requestPermission();
-        if (permission != loc.PermissionStatus.granted) {
-          print('Location permission denied');
+        if (permission != loc.PermissionStatus.granted && permission != loc.PermissionStatus.grantedLimited) {
+          print('LocationService: Location permission denied');
           return false;
         }
       }
 
+      // Konfigurasi pengaturan lokasi
       await _location.changeSettings(
-        interval: 1000 * 60 * 5, // Ubah ke 5 menit untuk pengujian
-        distanceFilter: 50, // Ubah ke 50 meter untuk pengujian
+        interval: 1000 * 60 * 5, // 5 menit
+        distanceFilter: 50, // 50 meter
         accuracy: loc.LocationAccuracy.high,
       );
 
       _isInitialized = true;
-      print('Location service initialized successfully');
+      print('LocationService: Initialized successfully');
       return true;
     } catch (e) {
-      print('Error initializing location service: $e');
+      print('LocationService: Error initializing - $e');
       return false;
     }
   }
@@ -67,11 +76,14 @@ class LocationService {
   Future<loc.LocationData?> getCurrentLocation() async {
     try {
       if (await initialize()) {
-        return await _location.getLocation();
+        final location = await _location.getLocation();
+        print('LocationService: Current location - Lat: ${location.latitude}, Lng: ${location.longitude}');
+        return location;
       }
+      print('LocationService: Initialization failed, cannot get location');
       return null;
     } catch (e) {
-      print('Error getting current location: $e');
+      print('LocationService: Error getting current location - $e');
       return null;
     }
   }
@@ -80,72 +92,104 @@ class LocationService {
 // Inisialisasi background service
 Future<void> initializeBackgroundService() async {
   final service = FlutterBackgroundService();
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      isForegroundMode: true,
-      autoStart: true,
-      autoStartOnBoot: true,
-      notificationChannelId: 'location_channel',
-      initialNotificationTitle: 'Pelacakan Lokasi Aktif',
-      initialNotificationContent: 'Memantau lokasi Anda di latar belakang',
-      foregroundServiceNotificationId: 888,
-    ),
-    iosConfiguration: IosConfiguration(
-      autoStart: true,
-      onForeground: onStart,
-      onBackground: onIosBackground,
-    ),
-  );
-  print('Starting background service...');
-  service.startService();
+  try {
+    await service.configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: onStart,
+        isForegroundMode: true,
+        autoStart: false,
+        autoStartOnBoot: true,
+        notificationChannelId: 'location_channel',
+        initialNotificationTitle: 'Pelacakan Lokasi Aktif',
+        initialNotificationContent: 'Memantau lokasi Anda di latar belakang',
+        foregroundServiceNotificationId: 888,
+      ),
+      iosConfiguration: IosConfiguration(
+        autoStart: false,
+        onForeground: onStart,
+        onBackground: onIosBackground,
+      ),
+    );
+    print('BackgroundService: Configuration completed');
+    await service.startService();
+    print('BackgroundService: Service started');
+  } catch (e) {
+    print('BackgroundService: Error configuring or starting service - $e');
+  }
 }
 
 @pragma('vm:entry-point')
 Future<void> onStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  if (service is AndroidServiceInstance) {
+    try {
+      await service.setAsForegroundService();
+      service.setForegroundNotificationInfo(
+        title: "Pelacakan Lokasi Aktif",
+        content: "Memantau lokasi Anda di latar belakang",
+      );
+      print('BackgroundService: Set as foreground service');
+    } catch (e) {
+      print('BackgroundService: Error setting as foreground - $e');
+      service.stopSelf();
+      return;
+    }
+  }
+
   try {
     await Firebase.initializeApp(options: firebaseOptions);
-    print('Firebase initialized in background service');
+    print('BackgroundService: Firebase initialized');
   } catch (e) {
-    print('Firebase initialization failed: $e');
+    print('BackgroundService: Firebase initialization failed - $e');
     service.stopSelf();
     return;
   }
 
   if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
-      service.setAsForegroundService();
-      print('Set as foreground service');
+      service.setAsForegroundService().then((_) {
+        print('BackgroundService: Set as foreground via event');
+      }).catchError((e) {
+        print('BackgroundService: Error in setAsForeground event - $e');
+      });
     });
     service.on('setAsBackground').listen((event) {
       service.setAsBackgroundService();
-      print('Set as background service');
+      print('BackgroundService: Set as background');
     });
     service.on('stopService').listen((event) {
       service.stopSelf();
-      print('Background service stopped');
+      print('BackgroundService: Service stopped via event');
     });
   }
 
   final locationService = LocationService();
   if (!await locationService.initialize()) {
-    print('Failed to initialize location service');
+    print('BackgroundService: Failed to initialize location service');
     service.stopSelf();
     return;
   }
 
-  print('Listening to location changes...');
+  if (!await locationService._location.serviceEnabled()) {
+    print('BackgroundService: Location service not enabled');
+    service.stopSelf();
+    return;
+  }
+
+  print('BackgroundService: Listening to location changes...');
   locationService.locationStream.listen((loc.LocationData data) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        print('No user logged in');
+        print('BackgroundService: No user logged in');
         return;
       }
 
-      print('Location changed: Lat: ${data.latitude}, Lng: ${data.longitude} at ${DateTime.now()}');
+      await user.getIdToken(true);
+      print('BackgroundService: Auth token refreshed for user ${user.uid}');
+
+      print('BackgroundService: Location changed - Lat: ${data.latitude}, Lng: ${data.longitude} at ${DateTime.now()}');
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'location': {
           'latitude': data.latitude,
@@ -153,27 +197,28 @@ Future<void> onStart(ServiceInstance service) async {
           'timestamp': FieldValue.serverTimestamp(),
         },
       });
-      print('Location updated in Firestore for user ${user.uid}');
+      print('BackgroundService: Location updated in Firestore for user ${user.uid}');
 
       if (service is AndroidServiceInstance) {
         service.setForegroundNotificationInfo(
           title: "Lokasi Diperbarui",
           content: "Lat: ${data.latitude?.toStringAsFixed(4)}, Lng: ${data.longitude?.toStringAsFixed(4)}",
         );
+        print('BackgroundService: Foreground notification updated');
       }
     } catch (e) {
-      print('Error updating location: $e');
-      // Retry after 2 minutes if update fails
+      print('BackgroundService: Error updating location - $e');
       await Future.delayed(Duration(minutes: 2));
     }
   }, onError: (e) {
-    print('Location stream error: $e');
+    print('BackgroundService: Location stream error - $e');
+    service.stopSelf();
   });
 }
 
 @pragma('vm:entry-point')
 bool onIosBackground(ServiceInstance service) {
-  print('iOS background handler triggered');
+  print('BackgroundService: iOS background handler triggered');
   return true;
 }
 
@@ -182,19 +227,22 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Initialize Firebase
     await Firebase.initializeApp(options: firebaseOptions);
-    print('Firebase initialized in main');
+    print('Main: Firebase initialized');
 
-    // Enable Firestore offline persistence
     FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
-
-    // Initialize background service
-    await initializeBackgroundService();
+    print('Main: Firestore persistence enabled');
 
     runApp(const MyApp());
   } catch (e) {
-    print('Application initialization failed: $e');
+    print('Main: Application initialization failed - $e');
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text('Gagal memulai aplikasi: $e'),
+        ),
+      ),
+    ));
   }
 }
 
@@ -220,8 +268,7 @@ class MyApp extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            // Jika pengguna sudah login, arahkan ke MainScreen setelah splash
-            // Jika belum login, arahkan ke LoginScreen setelah splash
+            print('MyApp: Auth state - User: ${snapshot.data?.uid ?? "none"}');
             return GestureDetector(
               onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
               child: child!,

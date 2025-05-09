@@ -118,5 +118,5 @@ final List<Map<String, dynamic>> _features = [
   {'icon': Icons.directions_car, 'label': 'Road Risk'},
   {'icon': Icons.cloud, 'label': 'Prakiraan Cuaca'},
   {'icon': Icons.air, 'label': 'Kualitas Udara'},
-  {'icon': Icons.contacts, 'label': 'Kerabat'},
+  {'icon': Icons.contacts, 'label': 'Psikologi'},
 ];

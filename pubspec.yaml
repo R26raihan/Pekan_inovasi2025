@@ -35,6 +35,7 @@ dependencies:
   flutter_background_service: ^5.0.1
   location: ^5.0.0
   flutter_background_service_android: ^6.3.0
+  permission_handler: ^11.3.1
 
 
 
@@ -58,6 +59,10 @@ dependencies:
   speech_to_text: ^7.0.0
   flutter_tts: ^4.0.2
 
+
+  typewritertext: ^1.0.0
+  animated_text_kit: ^4.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -73,3 +78,4 @@ flutter:
     - images/Logo_BMKG.png
     - images/BOT.png
     - images/Connecting teams-bro.png
+    - images/botpsikologi.png

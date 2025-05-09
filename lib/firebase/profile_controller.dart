@@ -30,12 +30,15 @@ class ProfileController {
 
   Future<void> _updateLocationOnce() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      print('ProfileController: No user logged in');
+      return;
+    }
 
     final locationService = LocationService();
     final data = await locationService.getCurrentLocation();
     if (data == null) {
-      print('Failed to get current location in ProfileController');
+      print('ProfileController: Failed to get current location');
       return;
     }
 
@@ -47,15 +50,18 @@ class ProfileController {
           'timestamp': FieldValue.serverTimestamp(),
         },
       });
-      print('Location updated from ProfileController for user ${user.uid} at ${DateTime.now()}');
+      print('ProfileController: Location updated for user ${user.uid} at ${DateTime.now()}');
     } catch (e) {
-      print('Error updating location in ProfileController: $e');
+      print('ProfileController: Error updating location - $e');
     }
   }
 
   Future<void> loadProfileData(BuildContext context) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      print('ProfileController: No user logged in');
+      return;
+    }
 
     _email = user.email;
 
@@ -64,9 +70,12 @@ class ProfileController {
 
       if (snapshot.exists) {
         final data = snapshot.data()!;
-        namaController.text = data['namaLengkap'] ?? '';
-        alamatController.text = data['alamat'] ?? '';
-        teleponController.text = data['telepon'] ?? '';
+        if (context.mounted) {
+          namaController.text = data['namaLengkap'] ?? '';
+          alamatController.text = data['alamat'] ?? '';
+          teleponController.text = data['telepon'] ?? '';
+          print('ProfileController: Profile data loaded for user ${user.uid}');
+        }
       } else {
         await _firestore.collection('users').doc(user.uid).set({
           'namaLengkap': '',
@@ -76,20 +85,33 @@ class ProfileController {
           'createdAt': FieldValue.serverTimestamp(),
           'location': null,
         });
+        print('ProfileController: Created new profile for user ${user.uid}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Gagal memuat data: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('ProfileController: Error loading profile data - $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat data: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 100,
+              left: 10,
+              right: 10,
+            ),
+          ),
+        );
+      }
     }
   }
 
   Future<void> updateProfileData(BuildContext context) async {
     final user = _auth.currentUser;
-    if (user == null || _isLoading) return;
+    if (user == null || _isLoading) {
+      print('ProfileController: No user logged in or update in progress');
+      return;
+    }
 
     _isLoading = true;
     try {
@@ -107,17 +129,37 @@ class ProfileController {
 
       await _updateLocationOnce();
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Profil berhasil diperbarui"),
-        backgroundColor: Color.fromARGB(255, 72, 72, 72),
-      ));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profil berhasil diperbarui'),
+            backgroundColor: const Color.fromARGB(255, 72, 72, 72),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 100,
+              left: 10,
+              right: 10,
+            ),
+          ),
+        );
+        print('ProfileController: Profile updated for user ${user.uid}');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Gagal memperbarui profil: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('ProfileController: Error updating profile - $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui profil: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 100,
+              left: 10,
+              right: 10,
+            ),
+          ),
+        );
+      }
     } finally {
       _isLoading = false;
     }

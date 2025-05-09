@@ -14,7 +14,8 @@ class ChatbotScreen extends StatefulWidget {
   _ChatbotScreenState createState() => _ChatbotScreenState();
 }
 
-class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateMixin {
+class _ChatbotScreenState extends State<ChatbotScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final List<_Message> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ChatbotService _chatbotService = ChatbotService();
@@ -25,7 +26,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
   late FlutterTts _flutterTts;
   bool _isListening = false;
   String _speechText = '';
-  bool _isWidgetActive = true; // Track widget lifecycle
+  bool _isWidgetActive = true;
 
   // Animation variables
   late AnimationController _animationController;
@@ -37,6 +38,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _isWidgetActive = true;
     _loadMessages();
     _initializeSpeech();
@@ -60,6 +62,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
     _animationController.repeat(reverse: true);
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Halaman kembali aktif
+      if (mounted && _isWidgetActive) {
+        setState(() {
+          _isListening = false;
+          _showVoiceUI = false;
+          _speechText = '';
+        });
+        _initializeSpeech();
+        _initializeTts();
+      }
+    } else if (state == AppLifecycleState.paused) {
+      // Halaman tidak aktif
+      _speech.stop();
+      _flutterTts.stop();
+      _audioLevelTimer?.cancel();
+    }
+  }
+
   void _initializeSpeech() {
     _speech = stt.SpeechToText();
     _speechText = '';
@@ -77,13 +100,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _isWidgetActive = false;
     _animationController.dispose();
     _audioLevelTimer?.cancel();
-    _controller.dispose();
     _speech.stop();
     _speech.cancel();
     _flutterTts.stop();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -133,14 +157,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
     await _saveMessages();
 
     try {
-      // Dapatkan respons dari chatbot
       dynamic response = await _chatbotService.getBotReply(msg);
-      print('Raw response: $response'); // Debugging respons mentah
+      print('Raw response: $response');
 
       String? reasoning;
       String botReply;
 
-      // Cek apakah respons adalah JSON atau string
       if (response is String) {
         botReply = response;
       } else if (response is Map && response.containsKey('choices')) {
@@ -153,7 +175,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
 
       if (mounted && _isWidgetActive) {
         setState(() {
-          // Tambahkan reasoning sebagai pesan terpisah jika ada
           if (reasoning != null && reasoning.isNotEmpty) {
             _messages.add(_Message(
               text: 'Berpikir: $reasoning',
@@ -161,7 +182,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
               isReasoning: true,
             ));
           }
-          // Tambahkan respons utama
           _messages.add(_Message(text: botReply, isUser: false));
           _isLoading = false;
         });
@@ -185,11 +205,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
     if (!_isWidgetActive) return;
 
     // Reset speech state
-    _speech.cancel();
     _initializeSpeech();
 
     bool available = await _speech.initialize(
       onStatus: (status) {
+        print('Speech status: $status');
         if (status == 'done' && mounted && _isWidgetActive) {
           _stopListening();
           if (_speechText.isNotEmpty) {
@@ -204,9 +224,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
             _isListening = false;
             _showVoiceUI = false;
           });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error speech recognition: $error')),
+          );
         }
       },
     );
+    print('Speech initialize available: $available');
 
     if (available && mounted && _isWidgetActive) {
       setState(() {
@@ -218,6 +242,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
 
       _speech.listen(
         onResult: (val) {
+          print('Speech result: ${val.recognizedWords}');
           if (mounted && _isWidgetActive) {
             setState(() {
               _speechText = val.recognizedWords;
@@ -245,6 +270,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
           _isListening = false;
           _showVoiceUI = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menginisialisasi speech recognition')),
+        );
       }
     }
   }
@@ -265,17 +293,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
   }
 
   Future<void> _speak(String text) async {
-    // Clean text from markdown symbols for better TTS
     text = text.replaceAll(RegExp(r'\*\*'), '');
-    await _flutterTts.stop(); // Hentikan TTS sebelumnya
+    await _flutterTts.stop();
     await _flutterTts.speak(text);
   }
 
   Widget _buildBotMessage(String text, {bool isReasoning = false}) {
-    // Handle markdown bold (**text**) for non-reasoning messages
     if (!isReasoning) {
       List<InlineSpan> spans = [];
-      final parts = text.split(RegExp(r'(\*\*[^\*]+\*\*)')); // Match **text** with content
+      final parts = text.split(RegExp(r'(\*\*[^\*]+\*\*)'));
 
       for (var part in parts) {
         if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
@@ -302,7 +328,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> with TickerProviderStateM
         TextSpan(children: spans),
       );
     } else {
-      // Reasoning ditampilkan dengan gaya italic dan warna lebih pudar
       return SelectableText(
         text,
         style: TextStyle(

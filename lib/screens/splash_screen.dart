@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pekan_innovasi/routing/routes.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -47,14 +49,43 @@ class _SplashScreenState extends State<SplashScreen>
     // Start animation
     _controller.forward();
 
-    // Navigate based on auth status after animation
-    _navigateBasedOnAuthStatus();
+    // Request permissions and navigate
+    _requestPermissionsAndNavigate();
   }
 
-  Future<void> _navigateBasedOnAuthStatus() async {
-    // Tunggu animasi selesai (4 detik total, termasuk delay tambahan)
-    await Future.delayed(const Duration(seconds: 4), () {});
-    if (mounted) {
+  Future<void> _requestPermissionsAndNavigate() async {
+    try {
+      // Tunggu animasi selesai (4 detik total, termasuk delay tambahan)
+      await Future.delayed(const Duration(seconds: 4), () {});
+
+      if (!mounted) return;
+
+      // Minta izin lokasi
+      var status = await Permission.location.status;
+      if (!status.isGranted) {
+        status = await Permission.location.request();
+        if (!status.isGranted) {
+          print('SplashScreen: Location permission denied');
+          _showPermissionDialog();
+          return;
+        }
+      }
+
+      // Minta izin background location
+      if (await Permission.locationAlways.isDenied) {
+        status = await Permission.locationAlways.request();
+        if (!status.isGranted) {
+          print('SplashScreen: Background location permission denied');
+          _showPermissionDialog();
+          return;
+        }
+      }
+
+      // Inisialisasi background service
+      await initializeBackgroundService();
+      print('SplashScreen: Background service initialized');
+
+      // Navigasi berdasarkan status autentikasi
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         print('SplashScreen: Pengguna sudah login, navigasi ke /main');
@@ -63,7 +94,59 @@ class _SplashScreenState extends State<SplashScreen>
         print('SplashScreen: Pengguna belum login, navigasi ke /login');
         Navigator.pushReplacementNamed(context, AppRoutes.login);
       }
+    } catch (e) {
+      print('SplashScreen: Error during initialization - $e');
+      if (mounted) {
+        _showErrorDialog('Gagal memulai aplikasi: $e');
+      }
     }
+  }
+
+  void _showPermissionDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Izin Diperlukan'),
+        content: const Text('Aplikasi memerlukan izin lokasi untuk berfungsi. Silakan aktifkan di pengaturan.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Tetap di SplashScreen jika izin ditolak
+            },
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              openAppSettings();
+              Navigator.pop(context);
+            },
+            child: const Text('Pengaturan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Kesalahan'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Coba ulang inisialisasi
+              _requestPermissionsAndNavigate();
+            },
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

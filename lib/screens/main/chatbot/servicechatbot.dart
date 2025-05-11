@@ -1,22 +1,28 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatbotService {
   final String apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  final String apiKey = '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'; // Ganti dengan API key dari OpenRouter
 
   Future<String> getBotReply(String message) async {
     try {
+      final String apiKey = dotenv.env['OPENROUTER_API_KEY'] ?? '';
+
+      if (apiKey.isEmpty) {
+        return 'API Key belum disiapkan.';
+      }
+
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',
-          'HTTP-Referer': 'YOUR_SITE_URL', // Opsional, ganti dengan URL situsmu
-          'X-Title': 'YOUR_SITE_NAME', // Opsional, ganti dengan nama situsmu
+          'HTTP-Referer': 'YOUR_SITE_URL', // Opsional
+          'X-Title': 'YOUR_SITE_NAME',     // Opsional
         },
         body: json.encode({
-          'model': 'microsoft/mai-ds-r1:free', // Model gratis dari OpenRouter
+          'model': 'microsoft/mai-ds-r1:free',
           'messages': [
             {
               'role': 'user',

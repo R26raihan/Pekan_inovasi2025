@@ -4,7 +4,7 @@ import 'package:pekan_innovasi/widgets/appbar/appbar.dart';
 import 'package:pekan_innovasi/widgets/navigator/navigator.dart';
 import 'package:pekan_innovasi/screens/main/home/home.dart';
 import 'package:pekan_innovasi/screens/main/dashboard/dashboard.dart';
-import 'package:pekan_innovasi/screens/main/map/map.dart';
+import 'package:pekan_innovasi/screens/main/map/map_screen.dart.dart';
 import 'package:pekan_innovasi/screens/main/relation/relation.dart';
 import 'package:pekan_innovasi/screens/main/profile/profile.dart';
 import 'package:pekan_innovasi/screens/main/Fitur/InformasiGempa.dart';

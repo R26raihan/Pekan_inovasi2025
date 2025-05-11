@@ -62,6 +62,7 @@ dependencies:
 
   typewritertext: ^1.0.0
   animated_text_kit: ^4.2.3
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:

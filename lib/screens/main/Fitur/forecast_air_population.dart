@@ -19,7 +19,7 @@ class _ForecastAirPopulationState extends State<ForecastAirPopulation> {
   @override
   void initState() {
     super.initState();
-    _init();  
+    _init();
   }
 
   Future<void> _init() async {
@@ -29,7 +29,6 @@ class _ForecastAirPopulationState extends State<ForecastAirPopulation> {
 
   Future<void> _determineLocation() async {
     try {
-      // 1. Cek dan minta permission
       LocationPermission perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
@@ -41,13 +40,12 @@ class _ForecastAirPopulationState extends State<ForecastAirPopulation> {
         });
         return;
       }
-      // 2. Ambil posisi
       Position pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
       setState(() {
         _location = '${pos.latitude.toStringAsFixed(4)}, '
-                    '${pos.longitude.toStringAsFixed(4)}';
+            '${pos.longitude.toStringAsFixed(4)}';
       });
     } catch (e) {
       setState(() {
@@ -134,98 +132,99 @@ class _ForecastAirPopulationState extends State<ForecastAirPopulation> {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey.shade900,
-      child: SafeArea(
-        bottom: false,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.tealAccent))
-            : Center(
-                child: _errorMessage.isNotEmpty
-                    ? Text(
-                        _errorMessage,
-                        style: const TextStyle(fontSize: 16, color: Colors.redAccent),
-                        textAlign: TextAlign.center,
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Tampilkan lokasi user
-                            if (_location.isNotEmpty) ...[
-                              Text(
-                                'Lokasi: $_location',
-                                style: const TextStyle(fontSize: 14, color: Colors.white70),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Kualitas udara di lingkunganmu di lokasi tersebut:',
-                                style: const TextStyle(fontSize: 16, color: Colors.white),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            const Text(
-                              'Perkiraan Kualitas Udara',
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.tealAccent))
+          : Center(
+              child: _errorMessage.isNotEmpty
+                  ? Text(
+                      _errorMessage,
+                      style: const TextStyle(fontSize: 16, color: Colors.redAccent),
+                      textAlign: TextAlign.center,
+                    )
+                  : SingleChildScrollView(
+                      // Hapus const EdgeInsets.all(16) di sini
+                      padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 16,
+                          bottom: MediaQuery.of(context).padding.bottom + 56),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_location.isNotEmpty) ...[
+                            Text(
+                              'Lokasi: $_location',
+                              style: const TextStyle(fontSize: 14, color: Colors.white70),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Kualitas udara di lingkunganmu di lokasi tersebut:',
+                              style: const TextStyle(fontSize: 16, color: Colors.white),
                             ),
                             const SizedBox(height: 16),
-                            if (_pollutionData?['list'] != null && _pollutionData!['list'].isNotEmpty) ...[
-                              _buildPollutionIndex(_pollutionData!['list'][0]['main']['aqi']),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Konsentrasi Polutan:',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              const SizedBox(height: 8),
-                              _buildPollutantCard(
-                                'Karbon Monoksida (CO)',
-                                _pollutionData!['list'][0]['components']['co'],
-                                'μg/m³',
-                              ),
-                              _buildPollutantCard(
-                                'Nitrogen Monoksida (NO)',
-                                _pollutionData!['list'][0]['components']['no'],
-                                'μg/m³',
-                              ),
-                              _buildPollutantCard(
-                                'Nitrogen Dioksida (NO₂)',
-                                _pollutionData!['list'][0]['components']['no2'],
-                                'μg/m³',
-                              ),
-                              _buildPollutantCard(
-                                'Ozon (O₃)',
-                                _pollutionData!['list'][0]['components']['o3'],
-                                'μg/m³',
-                              ),
-                              _buildPollutantCard(
-                                'Sulfur Dioksida (SO₂)',
-                                _pollutionData!['list'][0]['components']['so2'],
-                                'μg/m³',
-                              ),
-                              _buildPollutantCard(
-                                'Partikel PM2.5',
-                                _pollutionData!['list'][0]['components']['pm2_5'],
-                                'μg/m³',
-                              ),
-                              _buildPollutantCard(
-                                'Partikel PM10',
-                                _pollutionData!['list'][0]['components']['pm10'],
-                                'μg/m³',
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'AQI (Air Quality Index) adalah indikator kualitas udara yang digunakan untuk mengkomunikasikan seberapa tercemar udara saat ini.',
-                                style: TextStyle(fontSize: 14, color: Colors.white70),
-                              ),
-                            ] else
-                              const Text(
-                                'Data polusi udara tidak tersedia',
-                                style: TextStyle(fontSize: 16, color: Colors.white70),
-                              ),
                           ],
-                        ),
+                          const Text(
+                            'Perkiraan Kualitas Udara',
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_pollutionData?['list'] != null && _pollutionData!['list'].isNotEmpty) ...[
+                            _buildPollutionIndex(_pollutionData!['list'][0]['main']['aqi'] as int),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Konsentrasi Polutan:',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPollutantCard(
+                              'Karbon Monoksida (CO)',
+                              (_pollutionData!['list'][0]['components']['co'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            _buildPollutantCard(
+                              'Nitrogen Monoksida (NO)',
+                              (_pollutionData!['list'][0]['components']['no'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            _buildPollutantCard(
+                              'Nitrogen Dioksida (NO₂)',
+                              (_pollutionData!['list'][0]['components']['no2'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            _buildPollutantCard(
+                              'Ozon (O₃)',
+                              (_pollutionData!['list'][0]['components']['o3'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            _buildPollutantCard(
+                              'Sulfur Dioksida (SO₂)',
+                              (_pollutionData!['list'][0]['components']['so2'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            _buildPollutantCard(
+                              'Partikel PM2.5',
+                              (_pollutionData!['list'][0]['components']['pm2_5'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            _buildPollutantCard(
+                              'Partikel PM10',
+                              (_pollutionData!['list'][0]['components']['pm10'] as num).toDouble(),
+                              'μg/m³',
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'AQI (Air Quality Index) adalah indikator kualitas udara yang digunakan untuk mengkomunikasikan seberapa tercemar udara saat ini.',
+                              style: TextStyle(fontSize: 14, color: Colors.white70),
+                            ),
+                          ] else
+                            const Text(
+                              'Data polusi udara tidak tersedia',
+                              style: TextStyle(fontSize: 16, color: Colors.white70),
+                            ),
+                        ],
                       ),
-              ),
-      ),
+                    ),
+            ),
     );
   }
 }

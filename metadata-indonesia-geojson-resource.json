@@ -1,0 +1,15 @@
+{
+    "created": "2024-11-19T10:21:09.859298",
+    "description": "GeoJSON data for Indonesia.",
+    "format": "GeoJSON",
+    "download_url": "https://downloads.ohsome.org/hdx/mapillary_road_surface/heigit_idn_roadsurface_lines.geojson",
+    "id": "1bd9d7de-8030-49e7-8b78-99011dccdb7e",
+    "last_modified": "2024-11-19T10:21:09.828103",
+    "metadata_modified": "2025-04-15T17:03:36.290018",
+    "microdata": false,
+    "dataset_id": "ea2e600d-03b6-4fd2-ac7a-1113e5375673",
+    "resource_type": "api",
+    "name": "Indonesia GeoJSON Resource",
+    "mimetype": null,
+    "size": null
+}

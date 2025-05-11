@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:pekan_innovasi/screens/main/home/BNPBCard/model.dart';
 import 'package:pekan_innovasi/screens/main/home/BNPBCard/getBNPB.dart';
 import 'package:pekan_innovasi/screens/main/BMKG/bmkg_api.dart' as bmkg;
@@ -23,24 +25,26 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   bool _showFloodData = false;
   bool _showGempaTerbaru = false;
   bool _showGempaTerkini = false;
+  bool _showGeoJsonLayer = false; // New state for GeoJSON layer
   late AnimationController _sidebarAnimationController;
   final String _openWeatherApiKey = '4e39df06cb5091186927ce444e1ab4ad';
   List<Banjir> _banjirData = [];
   bmkg.AutoGempaResponse? _gempaTerbaruData;
   bmkg.GempaTerkiniResponse? _gempaTerkiniData;
+  List<Polyline> _geoJsonPolylines = []; // Store GeoJSON polylines
 
-final List<Map<String, dynamic>> _weatherLayers = [
-  {'name': 'Clouds', 'value': 'clouds_new'},              // Gratis
-  {'name': 'Precipitation', 'value': 'precipitation_new'},// Gratis
-  {'name': 'Pressure', 'value': 'pressure_new'},          // Gratis
-  {'name': 'Temperature', 'value': 'temp_new'},           // Gratis
-  {'name': 'Wind Speed', 'value': 'wind_new'},            // Gratis
-  {'name': 'Snow', 'value': 'snow'},                      // Gratis
-  {'name': 'Sea Level Pressure', 'value': 'pressure_cntr'}, // Gratis
-  {'name': 'Temperature (Contour)', 'value': 'temp'},     // Gratis
-  {'name': 'Precipitation (Classic)', 'value': 'precipitation'}, // Gratis
-  {'name': 'Clouds (Classic)', 'value': 'clouds'},        // Gratis
-];
+  final List<Map<String, dynamic>> _weatherLayers = [
+    {'name': 'Clouds', 'value': 'clouds_new'},
+    {'name': 'Precipitation', 'value': 'precipitation_new'},
+    {'name': 'Pressure', 'value': 'pressure_new'},
+    {'name': 'Temperature', 'value': 'temp_new'},
+    {'name': 'Wind Speed', 'value': 'wind_new'},
+    {'name': 'Snow', 'value': 'snow'},
+    {'name': 'Sea Level Pressure', 'value': 'pressure_cntr'},
+    {'name': 'Temperature (Contour)', 'value': 'temp'},
+    {'name': 'Precipitation (Classic)', 'value': 'precipitation'},
+    {'name': 'Clouds (Classic)', 'value': 'clouds'},
+  ];
 
   @override
   void initState() {
@@ -72,8 +76,49 @@ final List<Map<String, dynamic>> _weatherLayers = [
       });
     } catch (e) {
       setState(() {
-        _userLocation = LatLng(-6.2088, 106.8456);
+        _userLocation = LatLng(-6.2088, 106.8456); // Default to Jakarta
         _isLoading = false;
+      });
+    }
+  }
+
+  // Fetch and parse GeoJSON data
+  Future<void> _fetchAndDisplayGeoJson() async {
+    try {
+      final response = await http.get(Uri.parse(
+          'https://downloads.ohsome.org/hdx/mapillary_road_surface/heigit_idn_roadsurface_lines.geojson'));
+      if (response.statusCode == 200) {
+        final geoJson = jsonDecode(response.body);
+        List<Polyline> polylines = [];
+
+        // Parse GeoJSON features (assuming they are LineString geometries)
+        for (var feature in geoJson['features']) {
+          if (feature['geometry']['type'] == 'LineString') {
+            List<LatLng> points = [];
+            for (var coord in feature['geometry']['coordinates']) {
+              points.add(LatLng(coord[1], coord[0])); // GeoJSON uses [lon, lat]
+            }
+            polylines.add(Polyline(
+              points: points,
+              color: Colors.blue, // Customize color
+              strokeWidth: 4.0, // Customize width
+            ));
+          }
+        }
+
+        setState(() {
+          _geoJsonPolylines = polylines;
+          _showGeoJsonLayer = true;
+        });
+      } else {
+        throw Exception('Failed to load GeoJSON');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat data GeoJSON: $e')),
+      );
+      setState(() {
+        _showGeoJsonLayer = false;
       });
     }
   }
@@ -395,12 +440,14 @@ final List<Map<String, dynamic>> _weatherLayers = [
     );
   }
 
-  void _toggleSidebar() {
-    setState(() {
-      _showSidebar = !_showSidebar;
-      _showSidebar ? _sidebarAnimationController.forward() : _sidebarAnimationController.reverse();
-    });
-  }
+void _toggleSidebar() {
+  setState(() {
+    _showSidebar = !_showSidebar;
+    _showSidebar
+        ? _sidebarAnimationController.forward()
+        : _sidebarAnimationController.reverse();
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -436,6 +483,10 @@ final List<Map<String, dynamic>> _weatherLayers = [
                 TileLayer(
                   urlTemplate: 'https://tile.openweathermap.org/map/$_selectedWeatherLayer/{z}/{x}/{y}.png?appid=$_openWeatherApiKey',
                   userAgentPackageName: 'com.example.app',
+                ),
+              if (_showGeoJsonLayer) // Add GeoJSON layer
+                PolylineLayer(
+                  polylines: _geoJsonPolylines,
                 ),
               MarkerLayer(
                 markers: [
@@ -748,6 +799,37 @@ final List<Map<String, dynamic>> _weatherLayers = [
                 });
               },
             ),
+            ListTile(
+              title: const Text(
+                'Permukaan Jalan',
+                style: TextStyle(color: Colors.white),
+              ),
+              leading: Radio<bool>(
+                value: true,
+                groupValue: _showGeoJsonLayer,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true && !_showGeoJsonLayer) {
+                      _fetchAndDisplayGeoJson();
+                    } else {
+                      _geoJsonPolylines = [];
+                      _showGeoJsonLayer = false;
+                    }
+                  });
+                },
+                fillColor: MaterialStateProperty.all(const Color.fromARGB(255, 64, 255, 131)),
+              ),
+              onTap: () {
+                setState(() {
+                  if (_showGeoJsonLayer) {
+                    _geoJsonPolylines = [];
+                    _showGeoJsonLayer = false;
+                  } else {
+                    _fetchAndDisplayGeoJson();
+                  }
+                });
+              },
+            ),
             const Divider(color: Colors.white24),
             _buildClearLayerButton(),
             const Spacer(),
@@ -773,54 +855,54 @@ final List<Map<String, dynamic>> _weatherLayers = [
     );
   }
 
-Widget _buildWeatherLayers() {
-  return Expanded(
-    child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            'Scrool Untuk memilih layer',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+  Widget _buildWeatherLayers() {
+    return Expanded(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Scrool Untuk memilih layer',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _weatherLayers.length,
-            itemBuilder: (context, index) {
-              final layer = _weatherLayers[index];
-              return ListTile(
-                title: Text(
-                  layer['name'],
-                  style: TextStyle(color: Colors.white),
-                ),
-                leading: Radio<String>(
-                  value: layer['value'],
-                  groupValue: _selectedWeatherLayer,
-                  onChanged: (value) {
+          Expanded(
+            child: ListView.builder(
+              itemCount: _weatherLayers.length,
+              itemBuilder: (context, index) {
+                final layer = _weatherLayers[index];
+                return ListTile(
+                  title: Text(
+                    layer['name'],
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  leading: Radio<String>(
+                    value: layer['value'],
+                    groupValue: _selectedWeatherLayer,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedWeatherLayer = value;
+                      });
+                    },
+                    fillColor: MaterialStateProperty.all(Colors.tealAccent),
+                  ),
+                  onTap: () {
                     setState(() {
-                      _selectedWeatherLayer = value;
+                      _selectedWeatherLayer = (_selectedWeatherLayer == layer['value']) ? null : layer['value'];
                     });
                   },
-                  fillColor: MaterialStateProperty.all(Colors.tealAccent),
-                ),
-                onTap: () {
-                  setState(() {
-                    _selectedWeatherLayer = (_selectedWeatherLayer == layer['value']) ? null : layer['value'];
-                  });
-                },
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildClearLayerButton() {
     return ListTile(

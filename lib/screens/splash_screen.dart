@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pekan_innovasi/routing/routes.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../main.dart';
+import 'package:pekan_innovasi/background_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

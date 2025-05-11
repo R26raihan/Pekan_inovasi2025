@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pekan_innovasi/main.dart'; // Impor LocationService dari main.dart
+import 'package:pekan_innovasi/background_service.dart';
 
 class ProfileController {
   final FirebaseAuth _auth = FirebaseAuth.instance;

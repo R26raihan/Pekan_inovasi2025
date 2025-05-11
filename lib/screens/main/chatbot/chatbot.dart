@@ -65,7 +65,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Halaman kembali aktif
       if (mounted && _isWidgetActive) {
         setState(() {
           _isListening = false;
@@ -76,7 +75,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         _initializeTts();
       }
     } else if (state == AppLifecycleState.paused) {
-      // Halaman tidak aktif
       _speech.stop();
       _flutterTts.stop();
       _audioLevelTimer?.cancel();
@@ -204,7 +202,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   Future<void> _startListening() async {
     if (!_isWidgetActive) return;
 
-    // Reset speech state
     _initializeSpeech();
 
     bool available = await _speech.initialize(
@@ -449,184 +446,213 @@ class _ChatbotScreenState extends State<ChatbotScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: MainAppBar(
-        onClearChat: () {
-          showDialog(
+    return WillPopScope(
+      onWillPop: () async {
+        // Konfirmasi sebelum keluar jika ada pesan
+        if (_messages.isNotEmpty) {
+          bool? confirm = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Hapus Riwayat Chat'),
-              content: const Text('Apakah Anda yakin ingin menghapus semua riwayat chat?'),
+              title: const Text('Keluar dari Chat?'),
+              content: const Text('Apakah Anda yakin ingin keluar? Riwayat chat akan tetap tersimpan.'),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, false),
                   child: const Text('BATAL'),
                 ),
                 TextButton(
-                  onPressed: () {
-                    _clearMessages();
-                    Navigator.pop(context);
-                  },
-                  child: const Text('HAPUS'),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('KELUAR'),
                 ),
               ],
             ),
           );
-        },
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.blueGrey.shade900,
-                  Colors.blueGrey.shade800,
+          return confirm ?? false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: MainAppBar(
+          onClearChat: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Hapus Riwayat Chat'),
+                content: const Text('Apakah Anda yakin ingin menghapus semua riwayat chat?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('BATAL'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      _clearMessages();
+                      Navigator.pop(context);
+                    },
+                    child: const Text('HAPUS'),
+                  ),
                 ],
               ),
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    itemCount: _messages.length + (_isLoading ? 1 : 0),
-                    itemBuilder: (context, idx) {
-                      if (_isLoading && idx == _messages.length) {
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.asset('images/BOT.png', width: 30, height: 30),
-                                const SizedBox(width: 8),
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.tealAccent),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-                      final msg = _messages[idx];
-                      return Align(
-                        alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(12),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: msg.isUser
-                                ? Colors.tealAccent.withOpacity(0.3)
-                                : Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (!msg.isUser) ...[
-                                Image.asset('images/BOT.png', width: 30, height: 30),
-                                const SizedBox(width: 8),
-                              ],
-                              Flexible(
-                                child: msg.isUser
-                                    ? Text(
-                                        msg.text,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                        ),
-                                      )
-                                    : _buildBotMessage(msg.text, isReasoning: msg.isReasoning),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const Divider(height: 1, color: Colors.white24),
-                Container(
-                  color: Colors.blueGrey.shade900,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          _isListening ? Icons.mic_off : Icons.mic,
-                          color: Colors.tealAccent,
-                        ),
-                        onPressed: _isListening ? _stopListening : _startListening,
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          style: const TextStyle(color: Colors.white),
-                          cursorColor: Colors.tealAccent,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _sendMessage(),
-                          decoration: InputDecoration(
-                            hintText: 'Ketik atau tekan mic untuk bicara...',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.blueGrey.shade800,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Material(
-                        color: Colors.tealAccent,
-                        borderRadius: BorderRadius.circular(20),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: _sendMessage,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            child: const Icon(
-                              Icons.send_rounded,
-                              color: Colors.blueGrey,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ),
+            );
+          },
+        ),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.blueGrey.shade900,
+                      Colors.blueGrey.shade800,
                     ],
                   ),
                 ),
-              ],
-            ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        itemCount: _messages.length + (_isLoading ? 1 : 0),
+                        itemBuilder: (context, idx) {
+                          if (_isLoading && idx == _messages.length) {
+                            return Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset('images/BOT.png', width: 30, height: 30),
+                                    const SizedBox(width: 8),
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.tealAccent),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          final msg = _messages[idx];
+                          return Align(
+                            alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.all(12),
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                              ),
+                              decoration: BoxDecoration(
+                                color: msg.isUser
+                                    ? Colors.tealAccent.withOpacity(0.3)
+                                    : Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (!msg.isUser) ...[
+                                    Image.asset('images/BOT.png', width: 30, height: 30),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Flexible(
+                                    child: msg.isUser
+                                        ? Text(
+                                            msg.text,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          )
+                                        : _buildBotMessage(msg.text, isReasoning: msg.isReasoning),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const Divider(height: 1, color: Colors.white24),
+                    Container(
+                      color: Colors.blueGrey.shade900,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              _isListening ? Icons.mic_off : Icons.mic,
+                              color: Colors.tealAccent,
+                            ),
+                            onPressed: _isListening ? _stopListening : _startListening,
+                            tooltip: 'Aktifkan/Nonaktifkan Mikrofon',
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              style: const TextStyle(color: Colors.white),
+                              cursorColor: Colors.tealAccent,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _sendMessage(),
+                              decoration: InputDecoration(
+                                hintText: 'Ketik atau tekan mic untuk bicara...',
+                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.blueGrey.shade800,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Material(
+                            color: Colors.tealAccent,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: _sendMessage,
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                child: const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.blueGrey,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_showVoiceUI) _buildVoiceUI(),
+            ],
           ),
-          if (_showVoiceUI) _buildVoiceUI(),
-        ],
+        ),
       ),
     );
   }
@@ -662,66 +688,64 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MainAppBar({super.key, required this.onClearChat});
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.blueGrey.shade900,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          title: Row(
-            children: [
-              Image.asset(
-                'images/logo.png',
-                height: 30,
-                color: Colors.white,
-                colorBlendMode: BlendMode.srcIn,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Peduli Lindungi',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.white.withOpacity(0.95),
-                ),
-              ),
-            ],
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blueGrey.shade900,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-          centerTitle: false,
-          actions: [
-            IconButton(
-              icon: const Icon(
-                Icons.delete_rounded,
-                color: Colors.tealAccent,
-              ),
-              onPressed: onClearChat,
+        ],
+      ),
+      child: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.tealAccent,
+                ),
+                onPressed: () => Navigator.pop(context),
+                tooltip: 'Kembali',
+              )
+            : null,
+        title: Row(
+          children: [
+            Image.asset(
+              'images/logo.png',
+              height: 30,
+              color: Colors.white,
+              colorBlendMode: BlendMode.srcIn,
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.notifications_rounded,
-                color: Colors.tealAccent,
+            const SizedBox(width: 12),
+            Text(
+              'Peduli Lindungi',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.white.withOpacity(0.95),
               ),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.search_rounded,
-                color: Colors.tealAccent,
-              ),
-              onPressed: () {},
             ),
           ],
         ),
-      );
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.delete_rounded,
+              color: Colors.tealAccent,
+            ),
+            onPressed: onClearChat,
+            tooltip: 'Hapus Riwayat Chat',
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
